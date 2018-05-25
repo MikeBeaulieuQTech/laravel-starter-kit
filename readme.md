@@ -1,3 +1,12 @@
+This fork was created for this blog post: https://medium.com/@timothyteoh/enterprise-ready-laravel-with-openshift-cb166cfe8bb2
+
+## Creating s2i images
+```
+make s2i
+make runnable-image
+make publish
+```
+
 [![Build Status](https://travis-ci.org/darryldecode/laravel-starter-kit.svg?branch=master)](https://travis-ci.org/darryldecode/laravel-starter-kit)
 
 <img src="https://assets.darrylfernandez.com/wp-content/uploads/2018/04/Screenshot_2.png"></p>

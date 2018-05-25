@@ -1,0 +1,128 @@
+apiVersion: v1
+kind: Template
+metadata:
+  name: my-laravel-app
+  annotations:
+    openshift.io/display-name: "Laravel Starter Kit "
+    description: A template to create https://github.com/darryldecode/laravel-starter-kit on Openshift (forked at https://github.com/chalcedonyt/laravel-starter-kit)
+objects:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+  spec:
+    ports:
+    - name: 8080-tcp
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+    selector:
+      deploymentconfig: ${NAME}
+    sessionAffinity: None
+    type: ClusterIP
+  status:
+    loadBalancer: {}
+- apiVersion: v1
+  kind: DeploymentConfig
+  metadata:
+    labels:
+      app: ${NAME}
+    name: ${NAME}
+  spec:
+    replicas: 1
+    selector:
+      app: ${NAME}
+      deploymentconfig: ${NAME}
+    template:
+      metadata:
+        labels:
+          app: ${NAME}
+          deploymentconfig: ${NAME}
+      spec:
+        containers:
+        - env:
+          - name: DOCUMENTROOT
+            value: /public
+          - name: APP_URL
+            value: ${APP_URL}
+          - name: APP_DEBUG
+            value: ${APP_DEBUG}
+          - name: APP_ENV
+            value: ${APP_ENV}
+          - name: DB_HOST
+            value: ${DB_HOST}
+          - name: DB_DATABASE
+            valueFrom:
+              secretKeyRef:
+                key: database-name
+                name: mysql
+          - name: DB_USERNAME
+            valueFrom:
+              secretKeyRef:
+                key: database-user
+                name: mysql
+          - name: APP_LOG
+            value: errorlog
+          - name: QUEUE_DRIVER
+            value: database
+          - name: APP_KEY
+            value: ${APP_KEY}
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                key: database-password
+                name: mysql
+          image: ${APP_IMAGE_NAME}:${APP_IMAGE_TAG}
+          imagePullPolicy: Always
+          name: ${NAME}
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+          resources:
+            limits:
+              memory: 256Mi
+    test: false
+    triggers:
+    - imageChangeParams:
+        automatic: true
+        containerNames:
+        - ${NAME}
+        from:
+          kind: ImageStreamTag
+          name: ${APP_IMAGE_NAME}:${APP_IMAGE_TAG}
+      type: ImageChange
+    - type: ConfigChange
+
+parameters:
+- displayName: The App Name, used to name Openshift items
+  name: NAME
+  required: true
+  value: my-laravel-app
+- displayName: The ImageStream to deploy
+  name: APP_IMAGE_NAME
+  required: true
+  value: laravel-starter-kit
+- displayName: The ImageStream tag to deploy.
+  name: APP_IMAGE_TAG
+  required: true
+  value: latest
+- displayName: Laravel APP_KEY
+  name: APP_KEY
+  required: true
+  value: base64:h1QO78MxfU40QLdFOMXNUXscCxZi6Lyt3RtBd/cSj+8=
+- displayName: Laravel APP_ENV
+  name: APP_ENV
+  value: development
+- displayName: Laravel APP_DEBUG
+  name: APP_DEBUG
+  value: "false"
+- displayName: Laravel APP_URL
+  name: APP_URL
+  required: true
+  value: http://my-laravel-app.com
+- displayName: The database host
+  name: DB_HOST
+  required: true
+  value: mysql

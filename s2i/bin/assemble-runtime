@@ -36,7 +36,7 @@ if [ -f composer.json ]; then
   fi
 
   # Install App dependencies using Composer
-  ./composer.phar install --prefer-dist --no-dev --no-interaction --no-ansi --optimize-autoloader --classmap-authoritative
+  ./composer.phar install --prefer-dist --no-interaction --no-ansi --optimize-autoloader
 
   if [ ! -f composer.lock ]; then
     echo -e "\nConsider adding a 'composer.lock' file into your source repository.\n"
