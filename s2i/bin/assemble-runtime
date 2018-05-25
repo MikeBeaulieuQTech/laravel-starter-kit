@@ -1,0 +1,51 @@
+#!/bin/bash -e
+
+source ${PHP_CONTAINER_SCRIPTS_PATH}/common.sh
+
+shopt -s dotglob
+
+# Restore build artifacts for runtime usage
+echo "---> Restoring build artifacts..."
+tar -zxf laravel.tgz && rm -f laravel.tgz
+
+if [ -f composer.json ]; then
+  echo "Found 'composer.json', installing dependencies using composer.phar... "
+
+  # Install Composer
+  TEMPFILE=$(mktemp)
+  RETRIES=6
+  for ((i=0; i<$RETRIES; i++)); do
+
+    if [ -z "$COMPOSER_INSTALLER" ]; then
+      export COMPOSER_INSTALLER="https://getcomposer.org/installer"
+    fi
+
+    echo "Downloading $COMPOSER_INSTALLER, attempt $((i+1))/$RETRIES"
+    curl -o $TEMPFILE $COMPOSER_INSTALLER && break
+    sleep 10
+  done
+  if [[ $i == $RETRIES ]]; then
+    echo "Download failed, giving up."
+    exit 1
+  fi
+  php <$TEMPFILE
+
+  # Change the repo mirror if provided
+  if [ -n "$COMPOSER_MIRROR" ]; then
+    ./composer.phar config -g repositories.packagist composer $COMPOSER_MIRROR
+  fi
+
+  # Install App dependencies using Composer
+  ./composer.phar install --prefer-dist --no-dev --no-interaction --no-ansi --optimize-autoloader --classmap-authoritative
+
+  if [ ! -f composer.lock ]; then
+    echo -e "\nConsider adding a 'composer.lock' file into your source repository.\n"
+  fi
+fi
+
+# post-assemble files
+process_extending_files ./php-post-assemble/ ${PHP_CONTAINER_SCRIPTS_PATH}/post-assemble/
+
+# Fix source directory permissions
+fix-permissions ./
+fix-permissions ${HTTPD_CONFIGURATION_PATH}
